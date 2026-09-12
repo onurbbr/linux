@@ -140,6 +140,16 @@ void iris_hfi_gen2_packet_sys_init(struct iris_core *core, struct iris_hfi_heade
 				    &payload,
 				    sizeof(u32));
 
+	/*
+	 * AR50_LITE's firmware has no UBWC configuration interface and does not
+	 * merely ignore one: it answers the first property below with
+	 * HFI_SYS_ERROR_FATAL, which fails core init. The SoC-wide UBWC
+	 * description says nothing about what the video firmware implements,
+	 * so the platform declares it instead.
+	 */
+	if (core->iris_platform_data->no_ubwc_props)
+		return;
+
 	if (!ubwc->ubwc_enc_version)
 		return;
 

@@ -107,6 +107,7 @@ const struct iris_platform_data qcm2290_data = {
 	.tz_cp_config_data_size = ARRAY_SIZE(tz_cp_config_ar50lt),
 	.num_vpp_pipe = 1,
 	.no_rpmh = true,
+	.no_ubwc_props = true,
 	.wd_intr_mask = WRAPPER_INTR_STATUS_A2HWD_BMSK,
 	.icc_ib_multiplier = 2,
 	.max_session_count = 8,

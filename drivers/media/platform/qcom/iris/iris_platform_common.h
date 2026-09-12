@@ -330,6 +330,14 @@ struct iris_platform_data {
 	u32 num_vpp_pipe;
 	bool no_aon;
 	bool no_rpmh;
+	/*
+	 * Set on cores whose firmware has no UBWC configuration interface
+	 * (AR50_LITE). SYS_INIT must then carry HFI_CMD_INIT alone: this
+	 * firmware answers the first UBWC property with HFI_SYS_ERROR_FATAL
+	 * instead of ignoring it, and because the error handler recovers by
+	 * deinit followed by init, the core never comes up.
+	 */
+	bool no_ubwc_props;
 	u32 wd_intr_mask;
 	u32 icc_ib_multiplier;
 	u32 max_session_count;
