@@ -3123,11 +3123,20 @@ static struct gdsc gcc_usb30_prim_gdsc = {
 	.pwrsts = PWRSTS_OFF_ON,
 };
 
+/*
+ * The video codec domain can be handed over to hardware control while the
+ * codec runs, which the venus and iris drivers rely on: they call
+ * dev_pm_genpd_set_hwmode() on it. Without the trigger flag gdsc_init()
+ * installs no set_hwmode_dev callback, the call fails with -EOPNOTSUPP and
+ * the video driver gives up during core init. The sibling venus domain stays
+ * software controlled, matching the 0x58098 domain in gcc-sm6115.
+ */
 static struct gdsc gcc_vcodec0_gdsc = {
 	.gdscr = 0x58098,
 	.pd = {
 		.name = "gcc_vcodec0",
 	},
+	.flags = HW_CTRL_TRIGGER,
 	.pwrsts = PWRSTS_OFF_ON,
 };
 
