@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/display/panel/xiaomi,m7-38-0c-0a.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Xiaomi "m7 38 0c 0a" 1080x2400 AMOLED MIPI-DSI panel
+
+maintainers:
+  - Onur BÜBER <onurbuber@engineer.com>
+
+description: |
+  The Xiaomi "m7 38 0c 0a" is a 1080x2400 AMOLED panel with a MIPI-DSI
+  video mode interface and Display Stream Compression support, used in the
+  Xiaomi Redmi Note 12 4G.
+
+allOf:
+  - $ref: panel-common.yaml#
+
+properties:
+  compatible:
+    const: xiaomi,m7-38-0c-0a
+
+  reg:
+    maxItems: 1
+
+  vddio-supply:
+    description: 1.8V I/O supply rail
+
+  enable-gpios:
+    description: GPIO controlling the panel enable line
+    maxItems: 1
+
+  reset-gpios:
+    maxItems: 1
+
+  port: true
+
+required:
+  - compatible
+  - reg
+  - vddio-supply
+  - enable-gpios
+  - reset-gpios
+  - port
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/gpio/gpio.h>
+
+    dsi {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        panel@0 {
+            compatible = "xiaomi,m7-38-0c-0a";
+            reg = <0>;
+
+            vddio-supply = <&vreg_l9>;
+            enable-gpios = <&pm6125_gpios 9 GPIO_ACTIVE_HIGH>;
+            reset-gpios = <&tlmm 82 GPIO_ACTIVE_HIGH>;
+
+            port {
+                panel_in: endpoint {
+                    remote-endpoint = <&dsi0_out>;
+                };
+            };
+        };
+    };
+
+...
