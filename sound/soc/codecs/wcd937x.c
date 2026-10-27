@@ -489,12 +489,33 @@ static int wcd937x_codec_ear_dac_event(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		wcd937x_rx_clk_enable(component);
-		snd_soc_component_update_bits(component,
-					      WCD937X_DIGITAL_CDC_HPH_GAIN_CTL,
-					      BIT(2), BIT(2));
-		snd_soc_component_update_bits(component,
-					      WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
-					      BIT(0), BIT(0));
+		wcd937x->ear_rx_path = snd_soc_component_read(component,
+							      WCD937X_DIGITAL_CDC_EAR_PATH_CTL);
+		if (wcd937x->ear_rx_path & EAR_RX_PATH_AUX) {
+			snd_soc_component_update_bits(component,
+						      WCD937X_EAR_EAR_DAC_CON,
+						      BIT(7), 0x00);
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_AUX_GAIN_CTL,
+						      BIT(0), BIT(0));
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
+						      BIT(2), BIT(2));
+			snd_soc_component_update_bits(component,
+						      WCD937X_ANA_EAR_COMPANDER_CTL,
+						      BIT(7), BIT(7));
+		} else {
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_HPH_GAIN_CTL,
+						      BIT(2), BIT(2));
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
+						      BIT(0), BIT(0));
+			if (wcd937x->comp1_enable)
+				snd_soc_component_update_bits(component,
+							      WCD937X_DIGITAL_CDC_COMP_CTL_0,
+							      BIT(1), BIT(1));
+		}
 
 		if (hph_mode == CLS_AB_HIFI || hph_mode == CLS_H_HIFI)
 			snd_soc_component_update_bits(component,
@@ -504,10 +525,6 @@ static int wcd937x_codec_ear_dac_event(struct snd_soc_dapm_widget *w,
 			snd_soc_component_update_bits(component,
 						      WCD937X_HPH_NEW_INT_RDAC_HD2_CTL_L,
 						      0x0f, 0x06);
-		if (wcd937x->comp1_enable)
-			snd_soc_component_update_bits(component,
-						      WCD937X_DIGITAL_CDC_COMP_CTL_0,
-						      BIT(1), BIT(1));
 		usleep_range(5000, 5010);
 
 		snd_soc_component_update_bits(component, WCD937X_FLYBACK_EN, BIT(2), 0x00);
@@ -518,15 +535,37 @@ static int wcd937x_codec_ear_dac_event(struct snd_soc_dapm_widget *w,
 
 		break;
 	case SND_SOC_DAPM_POST_PMD:
+		if (wcd937x->ear_rx_path & EAR_RX_PATH_AUX) {
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_AUX_GAIN_CTL,
+						      BIT(0), 0x00);
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
+						      BIT(2), 0x00);
+		} else {
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_HPH_GAIN_CTL,
+						      BIT(2), 0x00);
+			snd_soc_component_update_bits(component,
+						      WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
+						      BIT(0), 0x00);
+			if (wcd937x->comp1_enable)
+				snd_soc_component_update_bits(component,
+							      WCD937X_DIGITAL_CDC_COMP_CTL_0,
+							      BIT(1), 0x00);
+		}
+		snd_soc_component_update_bits(component,
+					      WCD937X_ANA_EAR_COMPANDER_CTL,
+					      BIT(7), 0x00);
+		snd_soc_component_update_bits(component,
+					      WCD937X_EAR_EAR_DAC_CON,
+					      BIT(7), BIT(7));
+
 		if (hph_mode == CLS_AB_HIFI || hph_mode == CLS_H_LOHIFI ||
 		    hph_mode == CLS_H_HIFI)
 			snd_soc_component_update_bits(component,
 						      WCD937X_HPH_NEW_INT_RDAC_HD2_CTL_L,
 						      0x0f, BIT(0));
-		if (wcd937x->comp1_enable)
-			snd_soc_component_update_bits(component,
-						      WCD937X_DIGITAL_CDC_COMP_CTL_0,
-						      BIT(1), 0x00);
 		break;
 	}
 
