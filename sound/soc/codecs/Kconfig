@@ -664,6 +664,8 @@ config SND_SOC_AW8738
 	  SND_SOC_SIMPLE_AMPLIFIER, but additionally allows setting the
 	  operation mode using the Awinic-specific one-wire pulse control.
 
+source "sound/soc/codecs/aw87xxx/Kconfig"
+
 config SND_SOC_AW88395_LIB
 	select CRC8
 	tristate
