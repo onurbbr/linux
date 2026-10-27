@@ -1051,6 +1051,11 @@ properties:
 
       - items:
           - enum:
+              - xiaomi,tapas
+          - const: qcom,sm6225
+
+      - items:
+          - enum:
               - qcom,qcs615-ride
               - qcom,talos-evk
           - const: qcom,qcs615
@@ -1350,6 +1355,7 @@ allOf:
               - qcom,sm4250
               - qcom,sm6115
               - qcom,sm6125
+              - qcom,sm6225
               - qcom,sm6350
               - qcom,sm7125
               - qcom,sm7225
