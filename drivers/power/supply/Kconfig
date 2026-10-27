@@ -1191,6 +1191,14 @@ config FUEL_GAUGE_MM8013
 	  the state of charge, temperature, cycle count, actual and design
 	  capacity, etc.
 
+config FUEL_GAUGE_SM5602
+	tristate "Silicon Mitus SM5602 fuel gauge driver"
+	depends on I2C
+	help
+	  Say Y here to enable the Silicon Mitus SM5602 fuel gauge driver.
+	  It reports the battery state of charge from the battery open
+	  circuit voltage and is used on several Xiaomi SM6225 boards.
+
 config MACSMC_POWER
 	tristate "Apple SMC Battery and Power Driver"
 	depends on MFD_MACSMC
