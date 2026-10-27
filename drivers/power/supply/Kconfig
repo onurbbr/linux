@@ -1208,6 +1208,8 @@ config CHARGER_SC8551
 	  battery at a higher current, and reports the protection and ADC
 	  status of both the input and the battery side.
 
+source "drivers/power/supply/battery_secret/Kconfig"
+
 config MACSMC_POWER
 	tristate "Apple SMC Battery and Power Driver"
 	depends on MFD_MACSMC

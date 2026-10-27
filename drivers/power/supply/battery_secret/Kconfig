@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Xiaomi battery authentication (Maxim DS28E16 over GPIO 1-wire).
+# Ported from downstream (Redmi Note 11 / SM6225).
+
+config ONEWIRE_GPIO
+	bool "Xiaomi 1-wire GPIO bit-bang controller"
+	help
+	  Bit-banged 1-wire master over a TLMM GPIO, used to talk to
+	  the battery authentication IC. Provides the low-level
+	  ow_reset()/read_byte()/write_byte() symbols.
+
+config BATT_VERIFY_BY_DS28E16
+	bool "Maxim DS28E16 battery authentication IC"
+	depends on CRYPTO
+	select CRYPTO_HMAC
+	select CRYPTO_SHA3
+	select ONEWIRE_GPIO
+	help
+	  Driver for the Maxim DS28E16 secure authenticator found in
+	  Xiaomi batteries. Registers the "batt_verify" power supply
+	  (ROMID / page data / challenge-response authentication) used
+	  to verify genuine batteries and select the fuel-gauge profile.
+	  Needs ONEWIRE_GPIO below.
