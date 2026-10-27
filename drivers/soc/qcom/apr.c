@@ -367,9 +367,10 @@ static int apr_device_probe(struct device *dev)
 	struct apr_driver *adrv = to_apr_driver(dev->driver);
 	int ret;
 
+	adev->svc.callback = adrv->gpr_callback;
 	ret = adrv->probe(adev);
-	if (!ret)
-		adev->svc.callback = adrv->gpr_callback;
+	if (ret)
+		adev->svc.callback = NULL;
 
 	return ret;
 }
@@ -380,6 +381,7 @@ static void apr_device_remove(struct device *dev)
 	struct apr_driver *adrv = to_apr_driver(dev->driver);
 	struct packet_router *apr = dev_get_drvdata(adev->dev.parent);
 
+	adev->svc.callback = NULL;
 	if (adrv->remove)
 		adrv->remove(adev);
 	spin_lock(&apr->svcs_lock);
