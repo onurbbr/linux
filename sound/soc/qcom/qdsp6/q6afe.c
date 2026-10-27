@@ -1212,6 +1212,45 @@ static int q6afe_port_set_param_v2(struct q6afe_port *port, void *data,
 	return ret;
 }
 
+#define AFE_PARAM_ID_ISLAND_CONFIG	0x000102B4
+#define AFE_API_VERSION_ISLAND_CONFIG	0x1
+
+struct afe_param_id_island_cfg {
+	u32 minor_version;
+	u32 island_enable;
+} __packed;
+
+/**
+ * q6afe_send_port_island_mode() - enable/disable island mode on an AFE port
+ * @port: Instance of port to configure
+ * @enable: true to enable island mode, false to disable
+ *
+ * Island mode has to be configured on a CODEC DMA port before the port is
+ * started, otherwise the port starts but no audio data flows.
+ *
+ * Return: Zero on success, negative error code on failure.
+ */
+int q6afe_send_port_island_mode(struct q6afe_port *port, bool enable)
+{
+	struct afe_param_id_island_cfg cfg;
+	int ret;
+
+	cfg.minor_version = AFE_API_VERSION_ISLAND_CONFIG;
+	cfg.island_enable = enable ? 1 : 0;
+
+	ret = q6afe_port_set_param_v2(port, &cfg,
+				      AFE_PARAM_ID_ISLAND_CONFIG,
+				      AFE_MODULE_AUDIO_DEV_INTERFACE,
+				      sizeof(cfg));
+	if (ret)
+		dev_err(port->afe->dev,
+			"AFE island mode %d for port 0x%x failed %d\n",
+			enable, port->id, ret);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(q6afe_send_port_island_mode);
+
 static int q6afe_port_set_lpass_clock(struct q6afe_port *port,
 				 struct afe_clk_cfg *cfg)
 {

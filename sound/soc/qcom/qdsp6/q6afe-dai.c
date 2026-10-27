@@ -429,6 +429,13 @@ static int q6afe_dai_prepare(struct snd_pcm_substream *substream,
 	case WSA_CODEC_DMA_RX_0 ... RX_CODEC_DMA_RX_7:
 		q6afe_cdc_dma_port_prepare(dai_data->port[dai->id],
 					   &dai_data->port_config[dai->id].dma_cfg);
+		/* Island mode must be configured before the port is started. */
+		rc = q6afe_send_port_island_mode(dai_data->port[dai->id], true);
+		if (rc < 0) {
+			dev_err(dai->dev, "fail to set island mode %x\n",
+				dai->id);
+			return rc;
+		}
 		break;
 	case USB_RX:
 		q6afe_usb_port_prepare(dai_data->port[dai->id],
