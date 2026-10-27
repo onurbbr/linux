@@ -186,6 +186,48 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_MODEL_NAME,
 	POWER_SUPPLY_PROP_MANUFACTURER,
 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+	/*
+	 * Battery authentication properties, provided by the battery pack
+	 * side authenticator (e.g. the Maxim DS28E16 found in Xiaomi packs)
+	 * and consumed by fuel gauges which pick a battery profile from the
+	 * authenticated pack data. The raw blobs are returned in arrayval.
+	 */
+	POWER_SUPPLY_PROP_ROMID,
+	POWER_SUPPLY_PROP_DS_STATUS,
+	POWER_SUPPLY_PROP_PAGENUMBER,
+	POWER_SUPPLY_PROP_PAGEDATA,
+	POWER_SUPPLY_PROP_AUTHEN_RESULT,
+	POWER_SUPPLY_PROP_SESSION_SEED,
+	POWER_SUPPLY_PROP_S_SECRET,
+	POWER_SUPPLY_PROP_CHALLENGE,
+	POWER_SUPPLY_PROP_AUTH_ANON,
+	POWER_SUPPLY_PROP_AUTH_BDCONST,
+	POWER_SUPPLY_PROP_PAGE0_DATA,
+	POWER_SUPPLY_PROP_PAGE1_DATA,
+	POWER_SUPPLY_PROP_VERIFY_MODEL_NAME,
+	POWER_SUPPLY_PROP_CHIP_OK,
+	/*
+	 * Switched-capacitor divider charger telemetry; these are only
+	 * reported by such chargers (e.g. Southchip SC8551) and are not
+	 * interesting for a regular buck charger.
+	 */
+	POWER_SUPPLY_PROP_CHARGING_ENABLED,
+	POWER_SUPPLY_PROP_SC_BATTERY_PRESENT,
+	POWER_SUPPLY_PROP_SC_VBUS_PRESENT,
+	POWER_SUPPLY_PROP_SC_BATTERY_VOLTAGE,
+	POWER_SUPPLY_PROP_SC_BATTERY_CURRENT,
+	POWER_SUPPLY_PROP_SC_BATTERY_TEMPERATURE,
+	POWER_SUPPLY_PROP_SC_BUS_VOLTAGE,
+	POWER_SUPPLY_PROP_SC_BUS_CURRENT,
+	POWER_SUPPLY_PROP_SC_BUS_TEMPERATURE,
+	POWER_SUPPLY_PROP_SC_DIE_TEMPERATURE,
+	POWER_SUPPLY_PROP_SC_ALARM_STATUS,
+	POWER_SUPPLY_PROP_SC_FAULT_STATUS,
+	POWER_SUPPLY_PROP_SC_VBUS_ERROR_STATUS,
+	POWER_SUPPLY_PROP_SC_CHIP_VENDOR,
+	/* Fuel gauge extensions. */
+	POWER_SUPPLY_PROP_FASTCHARGE_MODE,
+	POWER_SUPPLY_PROP_RESISTANCE_ID,
 };
 
 enum power_supply_type {
@@ -202,6 +244,7 @@ enum power_supply_type {
 	POWER_SUPPLY_TYPE_USB_PD_DRP,		/* PD Dual Role Port */
 	POWER_SUPPLY_TYPE_APPLE_BRICK_ID,	/* Apple Charging Method */
 	POWER_SUPPLY_TYPE_WIRELESS,		/* Wireless */
+	POWER_SUPPLY_TYPE_BATT_VERIFY,		/* Battery authenticator */
 };
 
 enum power_supply_usb_type {
@@ -234,6 +277,7 @@ enum power_supply_notifier_events {
 union power_supply_propval {
 	int intval;
 	const char *strval;
+	unsigned char arrayval[50];
 };
 
 struct device_node;
