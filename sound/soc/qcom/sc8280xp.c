@@ -47,6 +47,28 @@ static const struct snd_kcontrol_new max98090_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Int Mic"),
 };
 
+static const struct snd_kcontrol_new tapas_controls[] = {
+	SOC_DAPM_PIN_SWITCH("Speaker"),
+	SOC_DAPM_PIN_SWITCH("Receiver"),
+	SOC_DAPM_PIN_SWITCH("Headphone Jack"),
+	SOC_DAPM_PIN_SWITCH("Mic Jack"),
+};
+
+static const struct snd_soc_dapm_widget tapas_dapm_widgets[] = {
+	SND_SOC_DAPM_HP("Headphone Jack", NULL),
+	SND_SOC_DAPM_MIC("Mic Jack", NULL),
+	SND_SOC_DAPM_SPK("Speaker", NULL),
+	SND_SOC_DAPM_SPK("Receiver", NULL),
+};
+
+static const struct snd_soc_dapm_route tapas_dapm_routes[] = {
+	{ "Speaker", NULL, "SpkrLeft OUT" },
+	{ "Receiver", NULL, "EAR" },
+	{ "SpkrLeft IN", NULL, "AUX" },
+	{ "Headphone Jack", NULL, "HPHL" },
+	{ "Headphone Jack", NULL, "HPHR" },
+};
+
 static const struct snd_soc_dapm_widget max98090_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
 	SND_SOC_DAPM_MIC("Mic Jack", NULL),
@@ -438,6 +460,17 @@ static struct qcom_snd_soc_common ayaneo_ps2_priv_data = {
 	.wcd_jack = true,
 };
 
+static const struct qcom_snd_soc_common tapas_priv_data = {
+	.driver_name = "sm6225",
+	.dapm_widgets = tapas_dapm_widgets,
+	.num_dapm_widgets = ARRAY_SIZE(tapas_dapm_widgets),
+	.controls = tapas_controls,
+	.num_controls = ARRAY_SIZE(tapas_controls),
+	.dapm_routes = tapas_dapm_routes,
+	.num_dapm_routes = ARRAY_SIZE(tapas_dapm_routes),
+	.wcd_jack = true,
+};
+
 static const struct qcom_snd_soc_common eliza_priv_data = {
 	.driver_name = "eliza",
 	.dapm_widgets = sc8280xp_dapm_widgets,
@@ -576,6 +609,7 @@ static const struct of_device_id snd_sc8280xp_dt_match[] = {
 	{ .compatible = "qcom,sm8550-sndcard", .data = &sm8550_priv_data },
 	{ .compatible = "qcom,sm8650-sndcard", .data = &sm8650_priv_data },
 	{ .compatible = "qcom,sm8750-sndcard", .data = &sm8750_priv_data },
+	{ .compatible = "xiaomi,tapas-sndcard", .data = &tapas_priv_data },
 	{}
 };
 
