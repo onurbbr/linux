@@ -6246,6 +6246,12 @@ static void process_adv_report(struct hci_dev *hdev, u8 type, bdaddr_t *bdaddr,
 	case LE_ADV_NONCONN_IND:
 	case LE_ADV_SCAN_RSP:
 		break;
+	case LE_ADV_INVALID:
+		/* The WCN3950 (FastConnect 6100) reports nearby extended
+		 * advertisements as legacy type 0x05 in its firmware. The
+		 * report is dropped below anyway; avoid logging it.
+		 */
+		return;
 	default:
 		bt_dev_err_ratelimited(hdev, "unknown advertising packet "
 				       "type: 0x%02x", type);
