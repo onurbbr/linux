@@ -565,6 +565,8 @@ static const struct of_device_id dsi_phy_dt_match[] = {
 	  .data = &dsi_phy_5nm_sar2130p_cfgs },
 	{ .compatible = "qcom,sc7280-dsi-phy-7nm",
 	  .data = &dsi_phy_7nm_7280_cfgs },
+	{ .compatible = "qcom,sm6225-dsi-phy-7nm",
+	  .data = &dsi_phy_7nm_6375_cfgs },
 	{ .compatible = "qcom,sm6375-dsi-phy-7nm",
 	  .data = &dsi_phy_7nm_6375_cfgs },
 	{ .compatible = "qcom,sm8350-dsi-phy-5nm",
@@ -696,7 +698,12 @@ static int dsi_phy_driver_probe(struct platform_device *pdev)
 		return dev_err_probe(dev, ret, "Unable to get iface clk\n");
 
 	if (phy->cfg->ops.pll_init) {
+		ret = pm_runtime_resume_and_get(dev);
+		if (ret)
+			return ret;
+
 		ret = phy->cfg->ops.pll_init(phy);
+		pm_runtime_put_sync(dev);
 		if (ret)
 			return dev_err_probe(dev, ret,
 					     "PLL init failed; need separate clk driver\n");
