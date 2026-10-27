@@ -102,6 +102,7 @@ struct bq25890_state {
 	u8 boost_fault;
 	u8 bat_fault;
 	u8 ntc_fault;
+	u8 vbus_type;
 };
 
 struct bq25890_device {
@@ -125,6 +126,7 @@ struct bq25890_device {
 	bool skip_reset;
 	bool read_back_init_data;
 	bool force_hiz;
+	bool enable_auto_dpdm;
 	u32 pump_express_vbus_max;
 	u32 iinlim_percentage;
 	enum bq25890_chip_version chip_version;
@@ -485,6 +487,51 @@ static void bq25890_update_state(struct bq25890_device *bq,
 			ret, !ret, 25000, 1000000);
 }
 
+/* VBUS_STAT (REG0B[7:5]) values for the BQ25890 family. */
+enum bq25890_vbus_type {
+	BQ25890_VBUS_NONE = 0,
+	BQ25890_VBUS_SDP,
+	BQ25890_VBUS_CDP,
+	BQ25890_VBUS_DCP,
+	BQ25890_VBUS_HVDCP,
+	BQ25890_VBUS_UNKNOWN,
+	BQ25890_VBUS_NONSTD,
+	BQ25890_VBUS_OTG,
+};
+
+/*
+ * Adapter type from the hardware D+/D- detection (enabled with
+ * ti,enable-auto-dpdm). Returns POWER_SUPPLY_USB_TYPE_UNKNOWN while
+ * unplugged, while detection is still running, or in OTG/boost mode.
+ */
+static int bq25890_get_usb_type(struct bq25890_device *bq,
+				struct bq25890_state *state)
+{
+	int ret;
+
+	ret = bq25890_field_read(bq, F_OTG_CFG);
+	if (ret < 0)
+		return ret;
+	if (ret == 1)
+		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+
+	if (!state->online)
+		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+
+	switch (state->vbus_type) {
+	case BQ25890_VBUS_SDP:
+		return POWER_SUPPLY_USB_TYPE_SDP;
+	case BQ25890_VBUS_CDP:
+		return POWER_SUPPLY_USB_TYPE_CDP;
+	case BQ25890_VBUS_DCP:
+	case BQ25890_VBUS_HVDCP:
+		/* enum power_supply_usb_type has no HVDCP member. */
+		return POWER_SUPPLY_USB_TYPE_DCP;
+	default:
+		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+	}
+}
+
 static int bq25890_power_supply_get_property(struct power_supply *psy,
 					     enum power_supply_property psp,
 					     union power_supply_propval *val)
@@ -675,6 +722,10 @@ static int bq25890_power_supply_get_property(struct power_supply *psy,
 		val->intval = bq25890_find_val(ret, TBL_TSPCT);
 		break;
 
+	case POWER_SUPPLY_PROP_USB_TYPE:
+		val->intval = bq25890_get_usb_type(bq, &state);
+		break;
+
 	default:
 		return -EINVAL;
 	}
@@ -794,7 +845,8 @@ static int bq25890_get_chip_state(struct bq25890_device *bq,
 		{F_BOOST_FAULT, &state->boost_fault},
 		{F_BAT_FAULT,	&state->bat_fault},
 		{F_CHG_FAULT,	&state->chrg_fault},
-		{F_NTC_FAULT,	&state->ntc_fault}
+		{F_NTC_FAULT,	&state->ntc_fault},
+		{F_VBUS_STAT,	&state->vbus_type}
 	};
 
 	for (i = 0; i < ARRAY_SIZE(state_fields); i++) {
@@ -965,6 +1017,16 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 		return ret;
 	}
 
+	/* Run BC1.2 D+/D- detection in hardware when requested; the
+	 * result is latched in VBUS_STAT and reported as USB_TYPE. */
+	if (bq->enable_auto_dpdm) {
+		ret = bq25890_field_write(bq, F_AUTO_DPDM_EN, 1);
+		if (ret < 0) {
+			dev_dbg(bq->dev, "Enabling auto DPDM failed %d\n", ret);
+			return ret;
+		}
+	}
+
 	/* initialize currents/voltages and other parameters */
 	ret = bq25890_rw_init_data(bq);
 	if (ret)
@@ -1003,6 +1065,7 @@ static const enum power_supply_property bq25890_power_supply_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_TEMP,
+	POWER_SUPPLY_PROP_USB_TYPE,
 };
 
 static char *bq25890_charger_supplied_to[] = {
@@ -1011,6 +1074,10 @@ static char *bq25890_charger_supplied_to[] = {
 
 static const struct power_supply_desc bq25890_power_supply_desc = {
 	.type = POWER_SUPPLY_TYPE_USB,
+	.usb_types = BIT(POWER_SUPPLY_USB_TYPE_UNKNOWN) |
+		     BIT(POWER_SUPPLY_USB_TYPE_SDP) |
+		     BIT(POWER_SUPPLY_USB_TYPE_CDP) |
+		     BIT(POWER_SUPPLY_USB_TYPE_DCP),
 	.properties = bq25890_power_supply_props,
 	.num_properties = ARRAY_SIZE(bq25890_power_supply_props),
 	.get_property = bq25890_power_supply_get_property,
@@ -1442,6 +1509,8 @@ static int bq25890_fw_probe(struct bq25890_device *bq)
 
 	init->ilim_en = device_property_read_bool(bq->dev, "ti,use-ilim-pin");
 	init->boostf = device_property_read_bool(bq->dev, "ti,boost-low-freq");
+	bq->enable_auto_dpdm = device_property_read_bool(bq->dev,
+							 "ti,enable-auto-dpdm");
 
 	return 0;
 }

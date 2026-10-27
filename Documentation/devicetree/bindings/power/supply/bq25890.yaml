@@ -73,6 +73,12 @@ properties:
       between the resistor setting and the IINLIM register setting
     type: boolean
 
+  ti,enable-auto-dpdm:
+    description: |
+      Run D+/D- (BC1.2) detection in hardware after VBUS attach; the
+      result is reported through the USB_TYPE power-supply property
+    type: boolean
+
   ti,thermal-regulation-threshold:
     $ref: /schemas/types.yaml#/definitions/uint32
     description: |
