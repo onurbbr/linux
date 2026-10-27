@@ -1089,11 +1089,13 @@ static int audioreach_widget_unload(struct snd_soc_component *scomp,
 			struct audioreach_graph_info *info = sg->info;
 
 			idr_remove(&apm->sub_graphs_idr, sg->sub_graph_id);
-			list_del(&sg->node);
-			info->num_sub_graphs--;
+			if (info) {
+				list_del(&sg->node);
+				info->num_sub_graphs--;
+			}
 			kfree(sg);
 			/* Check if there are no more sub-graphs left then remove graph info */
-			if (list_empty(&info->sg_list)) {
+			if (info && list_empty(&info->sg_list)) {
 				idr_remove(&apm->graph_info_idr, info->id);
 				kfree(info);
 			}
@@ -1428,6 +1430,11 @@ int audioreach_tplg_init(struct snd_soc_component *component)
 	const struct firmware *fw __free(firmware) = NULL;
 	ret = request_firmware(&fw, tplg_fw_name, dev);
 	if (ret < 0) {
+		if (ret == -ENOENT) {
+			dev_dbg(dev, "tplg firmware %s not available yet, deferring probe\n",
+				tplg_fw_name);
+			return -EPROBE_DEFER;
+		}
 		dev_err(dev, "tplg firmware loading %s failed %d\n", tplg_fw_name, ret);
 		return ret;
 	}
