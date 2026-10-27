@@ -701,12 +701,14 @@ static const struct adreno_info a6xx_gpus[] = {
 		/*
 		 * There are (at least) three SoCs implementing A610: SM6125
 		 * (trinket), SM6115 (bengal) and SM6225 (khaje). Trinket does
-		 * not have speedbinning, as only a single SKU exists and we
-		 * don't support khaje upstream yet.  Hence, this matching
-		 * table is only valid for bengal.
+		 * not have speedbinning, as only a single SKU exists. Bengal
+		 * uses the 206/200/157/127 fuse values while khaje uses the
+		 * 235/216 ones, so a single matching table covers both.
 		 */
 		.speedbins = ADRENO_SPEEDBINS(
 			{ 0,   0 },
+			{ 235, 1 },
+			{ 216, 2 },
 			{ 206, 1 },
 			{ 200, 2 },
 			{ 157, 3 },
