@@ -1199,6 +1199,15 @@ config FUEL_GAUGE_SM5602
 	  It reports the battery state of charge from the battery open
 	  circuit voltage and is used on several Xiaomi SM6225 boards.
 
+config CHARGER_SC8551
+	tristate "Southchip SC8551 charge pump driver"
+	depends on I2C
+	help
+	  Say Y to enable support for the Southchip SC8551 battery charge
+	  pump. The chip doubles the USB input voltage to charge the
+	  battery at a higher current, and reports the protection and ADC
+	  status of both the input and the battery side.
+
 config MACSMC_POWER
 	tristate "Apple SMC Battery and Power Driver"
 	depends on MFD_MACSMC
