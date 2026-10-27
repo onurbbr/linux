@@ -216,8 +216,9 @@ static int __q6apm_map_memory_fixed_region(struct device *dev, unsigned int grap
 	uint32_t buf_sz;
 	void *p;
 	uint32_t pos_mask = is_pos_buf ? APM_MMAP_TOKEN_MAP_TYPE_POS_BUF : 0;
-	struct gpr_pkt *pkt __free(kfree) = audioreach_alloc_apm_cmd_pkt(payload_size,
-					APM_CMD_SHARED_MEM_MAP_REGIONS, (graph_id | pos_mask));
+	struct gpr_pkt *pkt __free(kfree) = audioreach_alloc_apm_pkt(payload_size,
+					APM_CMD_SHARED_MEM_MAP_REGIONS, (graph_id | pos_mask),
+					GPR_APM_MODULE_IID);
 
 	if (IS_ERR(pkt))
 		return PTR_ERR(pkt);
@@ -326,8 +327,9 @@ static int __q6apm_unmap_memory_fixed_region(struct device *dev, unsigned int gr
 	struct q6apm *apm = dev_get_drvdata(dev->parent);
 	struct audioreach_graph_info *info;
 	uint32_t mem_map_handle;
-	struct gpr_pkt *pkt __free(kfree) = audioreach_alloc_apm_cmd_pkt(sizeof(*cmd),
-						APM_CMD_SHARED_MEM_UNMAP_REGIONS, graph_id);
+	struct gpr_pkt *pkt __free(kfree) = audioreach_alloc_apm_pkt(sizeof(*cmd),
+						APM_CMD_SHARED_MEM_UNMAP_REGIONS, graph_id,
+						GPR_APM_MODULE_IID);
 	if (IS_ERR(pkt))
 		return PTR_ERR(pkt);
 
@@ -579,6 +581,7 @@ static int graph_callback(const struct gpr_resp_pkt *data, void *priv, int op)
 		}
 
 		break;
+	case DATA_CMD_RSP_WR_SH_MEM_EP_DATA_BUFFER_DONE:
 	case DATA_CMD_RSP_WR_SH_MEM_EP_DATA_BUFFER_DONE_V2:
 		if (!graph->ar_graph)
 			break;
