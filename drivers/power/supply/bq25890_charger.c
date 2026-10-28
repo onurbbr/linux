@@ -24,6 +24,12 @@
 #define BQ25890_IRQ_PIN			"bq25890_irq"
 
 #define BQ25890_ID			3
+/*
+ * Variant of the BQ25890 that reports PN = 1.  It has the same register map
+ * and is described as "ti,bq25890" in the device tree, so it is handled as a
+ * plain BQ25890.
+ */
+#define BQ25890_ID_VARIANT		1
 #define BQ25895_ID			7
 #define BQ25896_ID			0
 
@@ -1360,6 +1366,8 @@ static int bq25890_get_chip_version(struct bq25890_device *bq)
 	}
 
 	switch (id) {
+	/* Some BQ25890 packages report PN = 1 instead of 3. */
+	case BQ25890_ID_VARIANT:
 	case BQ25890_ID:
 		bq->chip_version = BQ25890;
 		break;
