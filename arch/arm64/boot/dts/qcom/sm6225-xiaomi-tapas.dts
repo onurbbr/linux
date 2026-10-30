@@ -316,6 +316,15 @@
 		input-enable;
 	};
 
+	/* GPIO26: WL2866D camera PMIC enable (EN) pin */
+	wl2866d_default: wl2866d-default-state {
+		pins = "gpio26";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+		output-high;
+	};
+
 	/* GPIO66: BQ25890 USB D+/D- switch; downstream confirmed output-low idle */
 	bq2589x_usb_switch_default: bq2589x-usb-switch-default-state {
 		pins = "gpio66";
@@ -665,6 +674,50 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
+
+	/*
+	 * Camera PMIC. Its four LDOs feed the sensor digital and analog
+	 * rails. Nothing claims them yet because the camera pipeline is not
+	 * supported in mainline, so the rails are left always-on to keep the
+	 * hardware in the state the bootloader left it in.
+	 */
+	wl2866d: pmic@28 {
+		compatible = "willsemi,wl2866d";
+		reg = <0x28>;
+		enable-gpios = <&tlmm 26 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&wl2866d_default>;
+
+		regulators {
+			wl2866d_dvdd1: dvdd1 {
+				regulator-name = "dvdd1";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <1200000>;
+				regulator-always-on;
+			};
+
+			wl2866d_dvdd2: dvdd2 {
+				regulator-name = "dvdd2";
+				regulator-min-microvolt = <1050000>;
+				regulator-max-microvolt = <1050000>;
+				regulator-always-on;
+			};
+
+			wl2866d_avdd1: avdd1 {
+				regulator-name = "avdd1";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				regulator-always-on;
+			};
+
+			wl2866d_avdd2: avdd2 {
+				regulator-name = "avdd2";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				regulator-always-on;
+			};
+		};
+	};
 
 	sm5602@71 {
 		compatible = "sm,sm5602";
