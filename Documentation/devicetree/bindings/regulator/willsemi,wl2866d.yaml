@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/regulator/willsemi,wl2866d.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Willsemi WL2866D camera PMIC regulators
+
+maintainers:
+  - Onur BÜBER <onurbuber@engineer.com>
+
+description: |
+  The WL2866D is a four channel LDO PMIC used to power camera sensors and
+  their I/O rails. It has two DVDD outputs covering 600-1500 mV in 6 mV
+  steps and two AVDD outputs covering 1200-3000 mV in 12.5 mV steps. Each
+  output is switched by a bit in the enable register, and a chip-wide
+  discharge register can bleed the rails when they are turned off.
+
+  The chip only responds on I2C once its EN pin is asserted, so boards that
+  gate the supply with a GPIO have to describe it.
+
+  Downstream Qualcomm trees describe the same part as "ovti,wl2866d" and
+  "ovti,wl2866d-i2c"; those compatible strings are not used here.
+
+properties:
+  compatible:
+    const: willsemi,wl2866d
+
+  reg:
+    maxItems: 1
+
+  enable-gpios:
+    description: GPIO connected to the EN pin, active high.
+    maxItems: 1
+
+  regulators:
+    type: object
+    additionalProperties: false
+
+    patternProperties:
+      "^(dvdd|avdd)[12]$":
+        type: object
+        $ref: regulator.yaml#
+        unevaluatedProperties: false
+
+required:
+  - compatible
+  - reg
+  - regulators
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/gpio/gpio.h>
+
+    i2c {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        pmic@28 {
+            compatible = "willsemi,wl2866d";
+            reg = <0x28>;
+            enable-gpios = <&tlmm 26 GPIO_ACTIVE_HIGH>;
+
+            regulators {
+                dvdd1: dvdd1 {
+                    regulator-name = "dvdd1";
+                    regulator-min-microvolt = <1200000>;
+                    regulator-max-microvolt = <1200000>;
+                };
+
+                dvdd2: dvdd2 {
+                    regulator-name = "dvdd2";
+                    regulator-min-microvolt = <1050000>;
+                    regulator-max-microvolt = <1050000>;
+                };
+
+                avdd1: avdd1 {
+                    regulator-name = "avdd1";
+                    regulator-min-microvolt = <2800000>;
+                    regulator-max-microvolt = <2800000>;
+                };
+
+                avdd2: avdd2 {
+                    regulator-name = "avdd2";
+                    regulator-min-microvolt = <2800000>;
+                    regulator-max-microvolt = <2800000>;
+                };
+            };
+        };
+    };
