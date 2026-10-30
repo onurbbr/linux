@@ -39,6 +39,15 @@
 		};
 	};
 
+	vibrator {
+		compatible = "gpio-vibrator";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&vib_out_gpio8_default>;
+
+		enable-gpios = <&pm6125_gpios 8 GPIO_ACTIVE_HIGH>;
+	};
+
 	chosen {
 		bootargs = "console=tty0 pmos.nosplash";
 
@@ -514,6 +523,14 @@
 		power-source = <0>;
 		bias-pull-up;
 		input-enable;
+	};
+
+	/* GPIO8 drives the vibrator enable input through the PMIC LDO */
+	vib_out_gpio8_default: vib-out-gpio8-default-state {
+		pins = "gpio8";
+		function = "normal";
+		power-source = <0>;
+		bias-pull-up;
 	};
 };
 
