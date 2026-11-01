@@ -1022,7 +1022,14 @@
 	wcd937x_tx: codec@0,3 {
 		compatible = "sdw20217010a00";
 		reg = <0 3>;
-		qcom,tx-port-mapping = <1 1 2 3>;
+
+		/*
+		 * Put ADC1 and ADC2 on separate uplink ports. With the usual
+		 * <1 1 2 3> both ADCs land on master port 1, and enabling ADC2
+		 * corrupts the ADC1 stream with constant wideband noise even
+		 * though the two codecs are independent inputs.
+		 */
+		qcom,tx-port-mapping = <1 2 3 4>;
 		qcom,tx-channel-mapping = /bits/ 8 <1 2 1 1 2 3 3 4 1 2 3 4>;
 	};
 };
