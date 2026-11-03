@@ -136,7 +136,9 @@
 			"VA SWR_MIC5", "ADC3_OUTPUT",
 			"TX SWR_INPUT0", "ADC1_OUTPUT",
 			"TX SWR_INPUT1", "ADC2_OUTPUT",
-			"TX SWR_INPUT2", "ADC3_OUTPUT";
+			"TX SWR_INPUT2", "ADC3_OUTPUT",
+			"TX SWR_INPUT4", "ADC2_OUTPUT",
+			"TX SWR_INPUT5", "ADC3_OUTPUT";
 
 		aux-devs = <&aw87xxx>;
 
@@ -1028,6 +1030,11 @@
 		 * <1 1 2 3> both ADCs land on master port 1, and enabling ADC2
 		 * corrupts the ADC1 stream with constant wideband noise even
 		 * though the two codecs are independent inputs.
+		 *
+		 * The SoundWire master channel equals the slave port's ch_mask
+		 * bit, so here ADC2 lands on master port 2 channel 1, which is
+		 * TX macro slot SWR_MIC4. Android sets ChMap to TX2_CH2 instead
+		 * and therefore reads SWR_MIC5; both describe the same wire.
 		 */
 		qcom,tx-port-mapping = <1 2 3 4>;
 		qcom,tx-channel-mapping = /bits/ 8 <1 2 1 1 2 3 3 4 1 2 3 4>;
