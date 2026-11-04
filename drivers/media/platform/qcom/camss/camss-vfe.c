@@ -343,6 +343,7 @@ static u32 vfe_src_pad_code(struct vfe_line *line, u32 sink_code,
 	case CAMSS_660:
 	case CAMSS_2290:
 	case CAMSS_6150:
+	case CAMSS_6225:
 	case CAMSS_6350:
 	case CAMSS_7280:
 	case CAMSS_8x96:
@@ -919,7 +920,8 @@ static int vfe_match_clock_names(struct vfe_device *vfe,
 		!strcmp(clock->name, vfe_lite_name) ||
 		!strcmp(clock->name, "vfe_lite") ||
 		!strcmp(clock->name, "camnoc_axi") ||
-		!strcmp(clock->name, "camnoc_rt_axi"));
+		!strcmp(clock->name, "camnoc_rt_axi") ||
+		!strcmp(clock->name, "axi"));
 }
 
 /*
@@ -2029,6 +2031,7 @@ static int vfe_bpl_align_pix(struct vfe_device *vfe)
 
 	switch (vfe->camss->res->version) {
 	case CAMSS_2290:
+	case CAMSS_6225:
 		/* The alignment/bpl depends solely on the pixel format and is
 		 * computed dynamically in camss_format_get_bpl_alignment().
 		 */

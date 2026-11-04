@@ -83,6 +83,7 @@ enum camss_version {
 	CAMSS_660,
 	CAMSS_2290,
 	CAMSS_6150,
+	CAMSS_6225,
 	CAMSS_6350,
 	CAMSS_7280,
 	CAMSS_8x16,
@@ -136,6 +137,8 @@ struct camss {
 	int genpd_num;
 	struct device *genpd;
 	struct device_link *genpd_link;
+	struct dev_pm_domain_list *opp_pmdomain;
+	bool opp_ready;
 	struct icc_path *icc_path[ICC_SM8250_COUNT];
 	const struct camss_resources *res;
 };

@@ -1131,6 +1131,7 @@ static bool csiphy_is_gen2(u32 version)
 	switch (version) {
 	case CAMSS_2290:
 	case CAMSS_6150:
+	case CAMSS_6225:
 	case CAMSS_6350:
 	case CAMSS_7280:
 	case CAMSS_8250:
@@ -1230,6 +1231,15 @@ static int csiphy_init(struct csiphy_device *csiphy)
 		regs->lane_regs = &lane_regs_sm6350[0];
 		regs->lane_array_size = ARRAY_SIZE(lane_regs_sm6350);
 		break;
+	/*
+	 * SM6225 pairs a TFE-based CSID/VFE with a CSIPHY that is not the
+	 * qcm2290 one: downstream calls it "qcom,csiphy-v1.2.1", which is
+	 * kona's revision, and the three instances sit on a 0x2000 stride like
+	 * kona rather than qcm2290's 0x1000. It therefore takes sm8250's lane
+	 * registers even though everything downstream of the PHY is shared
+	 * with CAMSS_2290.
+	 */
+	case CAMSS_6225:
 	case CAMSS_7280:
 	case CAMSS_8250:
 		regs->lane_regs = &lane_regs_sm8250[0];
