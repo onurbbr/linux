@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include <dt-bindings/usb/pd.h>
+#include <dt-bindings/media/video-interfaces.h>
 #include <dt-bindings/sound/qcom,q6dsp-lpass-ports.h>
 #include "sm6225.dtsi"
 #include "pm6125.dtsi"
@@ -1059,11 +1060,14 @@
 /*
  * Camera front end.
  *
- * Only the Camera Control Interface and the rear main sensor are described:
- * the SoC side of the ISP in sm6225.dtsi has no driver yet, so the sensor has
- * no remote endpoint. The s5kjn1 driver still powers the part up, reads the
- * chip ID and registers a V4L2 subdevice, which is what we want in order to
- * confirm the bus, address and rail assignment before any capture work.
+ * The rear main sensor is wired to CSIPHY0 on CCI bus 0. The other three
+ * modules are not described yet because mainline has no driver for any of
+ * them: the front module answers with the s5k3l6 chip ID, the ultra wide
+ * with the ov08a10 one and the macro with the gc02m1 one, none of which
+ * match the module names the vendor ships. The rear wide rail assignment
+ * is also different from the others: it is the only module that takes its
+ * core rail from WL2866D DVDD2 and its analog rail from AVDD2, while
+ * everything else runs off AVDD1.
  *
  * The addresses and the power sequencing below come from the vendor camera
  * stack, which prints "Probe success, slot:N, slave_addr:0xXX" and every
@@ -1074,14 +1078,6 @@
  *   slot 1  addr 0x20 (0x10)  CCI 1  MCLK1  reset gpio24  s5k3l6  front
  *   slot 2  addr 0x6c (0x36)  CCI 1  MCLK2  reset gpio19  ov08a10 rear ultra
  *   slot 3  addr 0x6e (0x37)  CCI 0  MCLK3  reset gpio68  gc02m1  rear macro
- *
- * The three auxiliary modules are not described yet because mainline has no
- * driver for any of them: the front module answers with the s5k3l6 chip ID,
- * the ultra wide with the ov08a10 one and the macro with the gc02m1 one, none
- * of which match the module names the vendor ships. The rear wide rail
- * assignment is also different from the others: it is the only module that
- * takes its core rail from WL2866D DVDD2 and its analog rail from AVDD2,
- * while everything else runs off AVDD1.
  */
 &cci {
 	status = "okay";
@@ -1112,6 +1108,7 @@
 			camera_s5kjn1_ep: endpoint {
 				data-lanes = <1 2 3 4>;
 				link-frequencies = /bits/ 64 <700000000>;
+				remote-endpoint = <&csiphy0_ep>;
 			};
 		};
 	};
@@ -1119,6 +1116,33 @@
 
 &cci_i2c1 {
 	clock-frequency = <400000>;
+};
+
+/*
+ * The CSIPHY/CSID/TFE instance 0 carries the rear main camera. Only the
+ * CSIPHY port needs a description: the driver links every CSIPHY to every
+ * CSID and every CSID line to every TFE line on its own, so the DT only has
+ * to identify which phy the sensor is attached to and how many lanes it
+ * uses.
+ */
+&camss {
+	/* The PHY runs off PM6125 L4 (0.9 V core) and L18 (1.2 V I/O). */
+	vdd-csiphy-0p9-supply = <&pm6125_l4>;
+	vdd-csiphy-1p2-supply = <&pm6125_l18>;
+
+	status = "okay";
+
+	ports {
+		port@0 {
+			reg = <0>;
+
+			csiphy0_ep: endpoint {
+				data-lanes = <0 1 2 3>;
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				remote-endpoint = <&camera_s5kjn1_ep>;
+			};
+		};
+	};
 };
 
 &tlmm {

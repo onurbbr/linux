@@ -3618,8 +3618,7 @@
 			power-domain-names = "mx", "cx", "top";
 			operating-points-v2 = <&camss_opp_table>;
 
-			vdd-csiphy-1p2-supply = <&pm6125_l4>;
-			vdd-csiphy-1p8-supply = <&pm6125_l18>;
+			/* The CSIPHY supplies are board specific. */
 
 			status = "disabled";
 
