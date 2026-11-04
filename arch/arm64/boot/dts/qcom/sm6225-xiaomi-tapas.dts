@@ -1104,6 +1104,15 @@
 		vddd-supply = <&wl2866d_dvdd2>;
 		vddio-supply = <&wl2866d_avdd2>;
 
+		/*
+		 * The module is soldered with its pixel array turned a quarter
+		 * turn against the phone body, so the frames come out rotated
+		 * 90 degrees counter-clockwise and need the opposite correction.
+		 * This matches sensor-position-roll = <270> in the vendor DT.
+		 */
+		rotation = <90>;
+		orientation = <1>;
+
 		port {
 			camera_s5kjn1_ep: endpoint {
 				data-lanes = <1 2 3 4>;
