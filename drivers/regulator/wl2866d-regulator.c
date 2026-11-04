@@ -16,10 +16,12 @@
  *   0x06  AVDD2 voltage          Vout = 1200 mV + code * 12.5 mV
  *   0x0e  output enable          bit0 DVDD1, bit1 DVDD2, bit2 AVDD1, bit3 AVDD2
  *
- * Before the first write, the DVDD1 voltage register reads back a chip ID
- * of 0x64 or 0x55 instead of a voltage code, which is how the vendor driver
- * tells the part apart from an unrelated device answering at the same
- * address.
+ * The vendor driver treats the reset value of the DVDD1 register as a chip
+ * ID and rejects anything that is not 0x64 or 0x55. Those are really just
+ * voltage codes: 0x64 is 1200 mV and 0x55 is 1110 mV. Once a bootloader or
+ * a previous OS has programmed a different rail voltage the register holds
+ * that code instead, so the value cannot be used to identify the part. Keep
+ * the read as a presence check and ignore what it returns.
  *
  * Register 0x02 is deliberately left alone. It is one global control for all
  * four outputs, so pulsing it to bleed the output capacitors (as the vendor
@@ -41,9 +43,6 @@
 #define WL2866D_REG_AVDD1_VOLT		0x05
 #define WL2866D_REG_AVDD2_VOLT		0x06
 #define WL2866D_REG_ENABLE		0x0e
-
-#define WL2866D_CHIP_ID_0		0x64
-#define WL2866D_CHIP_ID_1		0x55
 
 #define WL2866D_DVDD_MIN_UV		600000
 #define WL2866D_DVDD_STEP_UV		6000
@@ -145,11 +144,7 @@ static int wl2866d_probe(struct i2c_client *client)
 
 	ret = regmap_read(regmap, WL2866D_REG_DVDD1_VOLT, &id);
 	if (ret)
-		return dev_err_probe(dev, ret, "failed to read chip ID\n");
-
-	if (id != WL2866D_CHIP_ID_0 && id != WL2866D_CHIP_ID_1)
-		return dev_err_probe(dev, -ENODEV,
-				     "unexpected chip ID 0x%02x\n", id);
+		return dev_err_probe(dev, ret, "failed to read DVDD1\n");
 
 	cfg.dev = dev;
 	cfg.regmap = regmap;
