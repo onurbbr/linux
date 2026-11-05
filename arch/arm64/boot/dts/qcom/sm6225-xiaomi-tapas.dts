@@ -1165,6 +1165,47 @@
 			};
 		};
 	};
+
+	/*
+	 * The ultra wide module is an OV08D10 behind the CSI lane mux.  The
+	 * vendor calls it by that name and the sensor reports an 8 MP array,
+	 * which is what this driver expects; the 0x5647 in the vendor probe
+	 * log is the expected id from the module description, not a readout.
+	 */
+	camera@36 {
+		compatible = "ovti,ov08d10";
+		reg = <0x36>;
+
+		reset-gpios = <&tlmm 19 GPIO_ACTIVE_LOW>;
+
+		clocks = <&gcc GCC_CAMSS_MCLK2_CLK>;
+		assigned-clocks = <&gcc GCC_CAMSS_MCLK2_CLK>;
+		assigned-clock-rates = <19200000>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&cam_mclk2_default>;
+
+		avdd-supply = <&wl2866d_avdd1>;
+		dvdd-supply = <&wl2866d_dvdd1>;
+		dovdd-supply = <&wl2866d_avdd2>;
+
+		/*
+		 * The module faces the same way as the rear main sensor but its
+		 * pixel array is turned the other way round, so the correction
+		 * is 270 degrees here rather than the 90 reported for the other
+		 * back cameras.
+		 */
+		rotation = <270>;
+		orientation = <1>;
+
+		port {
+			camera_ultra_ep: endpoint {
+				data-lanes = <1 2>;
+				link-frequencies = /bits/ 64 <720000000 360000000>;
+				remote-endpoint = <&csiphy1_ep>;
+			};
+		};
+	};
 };
 
 /*
@@ -1189,6 +1230,16 @@
 				data-lanes = <0 1 2 3>;
 				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
 				remote-endpoint = <&camera_s5kjn1_ep>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+
+			csiphy1_ep: endpoint {
+				data-lanes = <0 1>;
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				remote-endpoint = <&camera_ultra_ep>;
 			};
 		};
 
@@ -1241,17 +1292,20 @@
 	 */
 	camera_aux_resets: camera-aux-resets {
 		gpio-hog;
-		gpios = <19 GPIO_ACTIVE_HIGH>, <68 GPIO_ACTIVE_HIGH>;
+		gpios = <68 GPIO_ACTIVE_HIGH>;
 		output-high;
 		line-name = "camera auxiliary resets deasserted";
 	};
 
-	/* Rear ultra sits behind a CSI lane mux on this board. */
+	/*
+	 * The rear ultra wide sits behind a CSI lane mux on this board; the
+	 * select line has to be high for it.
+	 */
 	camera_csi_mux: camera-csi-mux {
 		gpio-hog;
 		gpios = <100 GPIO_ACTIVE_HIGH>;
 		output-high;
-		line-name = "camera csi mux select";
+		line-name = "camera csi mux select (ultra wide)";
 	};
 
 	/* VIO enable for the macro module. */
