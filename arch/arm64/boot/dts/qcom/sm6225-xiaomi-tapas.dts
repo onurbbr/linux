@@ -1147,9 +1147,14 @@
 		vddd-supply = <&wl2866d_dvdd1>;
 		vddio-supply = <&wl2866d_avdd2>;
 
-		/* Same quarter turn as the rear module. */
+		/*
+		 * Same quarter turn as the rear module, but this one looks at
+		 * the user. Reporting it as a back camera makes applications
+		 * skip the mirror they apply to the front preview, which turns
+		 * the image the wrong way once the device is held sideways.
+		 */
 		rotation = <90>;
-		orientation = <1>;
+		orientation = <0>;
 
 		port {
 			camera_s5k3l6_ep: endpoint {
