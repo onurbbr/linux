@@ -962,6 +962,7 @@ static const struct v4l2_ctrl_ops ov08d10_ctrl_ops = {
 static int ov08d10_init_controls(struct ov08d10 *ov08d10)
 {
 	struct v4l2_ctrl_handler *ctrl_hdlr;
+	struct v4l2_fwnode_device_properties props;
 	u8 link_freq_size;
 	s64 exposure_max;
 	s64 vblank_def;
@@ -1045,6 +1046,20 @@ static int ov08d10_init_controls(struct ov08d10 *ov08d10)
 
 	if (ctrl_hdlr->error)
 		return ctrl_hdlr->error;
+
+	/*
+	 * Expose the mounting rotation and the facing direction so that
+	 * userspace knows how to present the frames; without them a rotated
+	 * module looks wrong on screen.
+	 */
+	ret = v4l2_fwnode_device_parse(ov08d10->dev, &props);
+	if (ret)
+		return ret;
+
+	ret = v4l2_ctrl_new_fwnode_properties(ctrl_hdlr, &ov08d10_ctrl_ops,
+					      &props);
+	if (ret)
+		return ret;
 
 	ov08d10->sd.ctrl_handler = ctrl_hdlr;
 
