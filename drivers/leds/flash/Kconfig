@@ -20,6 +20,15 @@ config LEDS_AS3645A
 	  controller. V4L2 flash API is provided as well if
 	  CONFIG_V4L2_FLASH_API is enabled.
 
+config LEDS_KTD2691
+	tristate "LED support for the Kinetic KTD2691 camera flash"
+	depends on I2C
+	depends on OF
+	help
+	  Say yes here to enable the Kinetic KTD2691 camera flash LED. The
+	  part is driven over I2C and provides both a torch and a
+	  time-limited flash output.
+
 config LEDS_KTD2692
 	tristate "LED support for Kinetic KTD2692 flash LED controller"
 	depends on OF

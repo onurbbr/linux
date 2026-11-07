@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/leds/kinetic,ktd2691.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: KTD2691 Flash LED Driver from Kinetic Technologies
+
+maintainers:
+  - Onur BÜBER <onurbuber@engineer.com>
+
+description: |
+  KTD2691 is an inductorless, single flash LED driver with a programmable
+  1.5 A current source. It is programmed over I2C and can drive up to 1.5 A
+  in flash mode, up to 376 mA in torch mode, or an infrared LED in IR mode.
+
+  The current source is shared between the three modes, so only the mode
+  that is active at a given time draws current. Flash mode can be started
+  either by writing the mode register or, if the STROBE pin is wired, by
+  driving that pin high; the flash time-out then ends the pulse on its own.
+
+properties:
+  compatible:
+    const: kinetic,ktd2691
+
+  reg:
+    maxItems: 1
+
+  vin-supply:
+    description: LED supply (2.7V to 5.5V).
+
+  strobe-gpios:
+    maxItems: 1
+    description: |
+      Specifier of the GPIO connected to the STROBE pin. When present the
+      hardware strobe is used for the flash pulse instead of the mode
+      register, and the pulse length is bounded by the flash time-out.
+
+  led:
+    type: object
+    $ref: common.yaml#
+    description: Properties for the LED.
+    properties:
+      function: true
+      color: true
+
+      flash-max-timeout-us:
+        description: Flash LED maximum timeout. The hardware supports
+          40ms to 1600ms.
+
+      led-max-microamp:
+        maximum: 376000
+        description: Maximum torch mode current.
+
+      flash-max-microamp:
+        maximum: 1500000
+        description: Maximum flash mode current.
+
+    additionalProperties: false
+
+required:
+  - compatible
+  - reg
+  - led
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/gpio/gpio.h>
+    #include <dt-bindings/leds/common.h>
+
+    i2c {
+      #address-cells = <1>;
+      #size-cells = <0>;
+
+      flash@64 {
+        compatible = "kinetic,ktd2691";
+        reg = <0x64>;
+
+        led {
+          function = LED_FUNCTION_FLASH;
+          color = <LED_COLOR_ID_WHITE>;
+          flash-max-timeout-us = <1000000>;
+          flash-max-microamp = <1500000>;
+          led-max-microamp = <376000>;
+        };
+      };
+    };
+
+...
