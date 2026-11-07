@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include <dt-bindings/usb/pd.h>
+#include <dt-bindings/leds/common.h>
 #include <dt-bindings/media/video-interfaces.h>
 #include <dt-bindings/sound/qcom,q6dsp-lpass-ports.h>
 #include "sm6225.dtsi"
@@ -76,6 +77,23 @@
 		gpio = <&tlmm 36 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
+	};
+
+	/*
+	 * Power for the rear main camera voice coil motor. The vendor DT shows
+	 * it as a fixed 2.8 V regulator gated by TLMM 101 rather than a PMIC
+	 * LDO, even though the upstream reference board description points at
+	 * PM8008 LDO5 (that chip is disabled on this design and does not
+	 * answer on I2C).
+	 */
+	cam_vaf_2p8: cam-vaf-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_vaf_2p8";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		regulator-always-on;
+		gpio = <&tlmm 101 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
 	};
 
 	onewire_gpio: onewire-gpio {
@@ -1096,6 +1114,13 @@
 		assigned-clocks = <&gcc GCC_CAMSS_MCLK0_CLK>;
 		assigned-clock-rates = <24000000>;
 
+		/*
+		 * The MCLK this sensor enables at probe sits inside the CAMSS
+		 * top GDSC, so the domain has to be on for the chip ID read to
+		 * work at all.
+		 */
+		power-domains = <&gcc GCC_CAMSS_TOP_GDSC>;
+
 		pinctrl-names = "default";
 		pinctrl-0 = <&cam_mclk0_default>;
 
@@ -1112,6 +1137,8 @@
 		rotation = <90>;
 		orientation = <1>;
 
+		lens-focus = <&rear_vcm>;
+
 		port {
 			camera_s5kjn1_ep: endpoint {
 				data-lanes = <1 2 3 4>;
@@ -1119,6 +1146,50 @@
 				remote-endpoint = <&csiphy0_ep>;
 			};
 		};
+	};
+
+	/*
+	 * The rear main module carries a 32 KiB calibration EEPROM with the
+	 * per-unit focus codes, white balance, lens shading and PDAF data;
+	 * the vendor module description puts it at 0xA2, and the device
+	 * responds up to 0x7fff and wraps there, so it is a 24C256. The
+	 * vendor part name is not recorded anywhere in the module data and
+	 * 24-series EEPROMs have no identification register, so the generic
+	 * compatible is used. Exposed read-only for userspace tuning.
+	 */
+	eeprom@51 {
+		compatible = "atmel,24c256";
+		reg = <0x51>;
+		vcc-supply = <&wl2866d_avdd2>;
+		read-only;
+	};
+
+	/*
+	 * Voice coil motor for the rear main lens. It is a Giantec GT9764,
+	 * which uses the DW9800K register layout: 0x02 enables ringing,
+	 * 0x06 selects the SAC mode and 0x07 the VCM prescaler. The vendor
+	 * module description reports address 0x0c, a 10 bit DAC and an
+	 * initial code of 367; the vendor init writes 0x06 = 0x40 (SAC mode
+	 * 1) and 0x07 = 0x67. The analog rail is the camera VAF switch on
+	 * TLMM 101.
+	 */
+	rear_vcm: lens@c {
+		compatible = "giantec,gt9764", "dongwoon,dw9800k";
+		reg = <0x0c>;
+
+		vdd-supply = <&cam_vaf_2p8>;
+		vin-supply = <&wl2866d_avdd2>;
+
+		dongwoon,sac-mode = <1>;
+		dongwoon,vcm-prescale = <0x67>;
+
+		/*
+		 * The module description carries initialCode = 367 for this
+		 * lens, which is the position the factory leaves it in. Park
+		 * the lens there at power on so that an application which
+		 * never touches the focus control still gets a usable image.
+		 */
+		dongwoon,default-position = <367>;
 	};
 };
 
@@ -1204,6 +1275,37 @@
 				link-frequencies = /bits/ 64 <720000000 360000000>;
 				remote-endpoint = <&csiphy1_ep>;
 			};
+		};
+	};
+
+	/*
+	 * The flash sits on the second CCI bus at 7-bit address 0x64. The
+	 * vendor kernel never reads that address from the device tree either:
+	 * it is hard coded in cam_flash_dev.c as 0xc8 >> 1, together with CCI
+	 * master 1 and the fast mode clock rate, which is what this bus runs
+	 * at. The STROBE line is left unconnected: this board pulses the LED
+	 * through the mode register, as the vendor stack does.
+	 */
+	flash@64 {
+		compatible = "kinetic,ktd2691";
+		reg = <0x64>;
+
+		led {
+			function = LED_FUNCTION_FLASH;
+			color = <LED_COLOR_ID_WHITE>;
+
+			/*
+			 * Deliberately conservative. The part can drive 1.5 A
+			 * into a flash pulse and 376 mA continuously into the
+			 * torch, and the vendor stack programs about 1020 mA
+			 * and 132 mA. Nothing here has been characterised on
+			 * this LED yet, so the ceilings are set well below
+			 * those: a 500 mA pulse for at most 200 ms, and 132 mA
+			 * for the torch, which is the vendor torch level.
+			 */
+			flash-max-microamp = <500000>;
+			led-max-microamp = <132000>;
+			flash-max-timeout-us = <200000>;
 		};
 	};
 };
