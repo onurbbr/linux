@@ -86,6 +86,8 @@ struct dw9719_device {
 	struct device *dev;
 	struct regmap *regmap;
 	struct regulator *regulator;
+	struct regulator *vin;
+	s32 default_position;
 	enum dw9719_model model;
 	u32 mode_low_bits;
 	u32 sac_mode;
@@ -100,6 +102,7 @@ struct dw9719_device {
 static int dw9719_power_down(struct dw9719_device *dw9719)
 {
 	u32 reg_pwr = dw9719->model == DW9718S ? DW9718S_PD : DW9719_CONTROL;
+	int ret;
 
 	/*
 	 * Worth engaging the internal SHUTDOWN mode especially due to the
@@ -107,7 +110,10 @@ static int dw9719_power_down(struct dw9719_device *dw9719)
 	 */
 	if (cci_write(dw9719->regmap, reg_pwr, DW9719_SHUTDOWN, NULL))
 		dev_err(dw9719->dev, "Error writing to power register\n");
-	return regulator_disable(dw9719->regulator);
+	ret = regulator_disable(dw9719->regulator);
+	if (dw9719->vin)
+		regulator_disable(dw9719->vin);
+	return ret;
 }
 
 static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
@@ -117,9 +123,18 @@ static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
 	int ret;
 	int err;
 
+	if (dw9719->vin) {
+		ret = regulator_enable(dw9719->vin);
+		if (ret)
+			return ret;
+	}
+
 	ret = regulator_enable(dw9719->regulator);
-	if (ret)
+	if (ret) {
+		if (dw9719->vin)
+			regulator_disable(dw9719->vin);
 		return ret;
+	}
 
 	/*
 	 * Need 100us to transition from SHUTDOWN to STANDBY.
@@ -218,6 +233,13 @@ props:
 		cci_write(dw9719->regmap, DW9719_VCM_FREQ, dw9719->vcm_freq, &ret);
 	}
 
+	if (!ret && dw9719->default_position >= 0) {
+		u32 reg = dw9719->model == DW9718S ? DW9718S_VCM_CURRENT
+						   : DW9719_VCM_CURRENT;
+		ret = cci_write(dw9719->regmap, reg,
+				dw9719->default_position, NULL);
+	}
+
 	if (ret)
 		dw9719_power_down(dw9719);
 
@@ -299,6 +321,15 @@ static int dw9719_resume(struct device *dev)
 		usleep_range(DW9719_CTRL_DELAY_US, DW9719_CTRL_DELAY_US + 10);
 	}
 
+	/*
+	 * The ramp stops one step short, and writes nothing at all for a
+	 * position below one step; the chip's reset value is not
+	 * necessarily 0.
+	 */
+	ret = dw9719_t_focus_abs(dw9719, current_focus);
+	if (ret)
+		goto err_power_down;
+
 	return 0;
 
 err_power_down:
@@ -332,7 +363,8 @@ static int dw9719_init_controls(struct dw9719_device *dw9719)
 
 	dw9719->ctrls.focus = v4l2_ctrl_new_std(&dw9719->ctrls.handler, ops,
 						V4L2_CID_FOCUS_ABSOLUTE, 0,
-						DW9719_MAX_FOCUS_POS, 1, 0);
+						DW9719_MAX_FOCUS_POS, 1,
+						max(dw9719->default_position, 0));
 
 	if (dw9719->ctrls.handler.error) {
 		dev_err(dw9719->dev, "Error initialising v4l2 ctrls\n");
@@ -353,6 +385,7 @@ static const struct v4l2_subdev_ops dw9719_ops = { };
 static int dw9719_probe(struct i2c_client *client)
 {
 	struct dw9719_device *dw9719;
+	u32 val;
 	int ret;
 
 	dw9719 = devm_kzalloc(&client->dev, sizeof(*dw9719), GFP_KERNEL);
@@ -366,11 +399,40 @@ static int dw9719_probe(struct i2c_client *client)
 		return PTR_ERR(dw9719->regmap);
 
 	dw9719->dev = &client->dev;
+	dw9719->default_position = -1;
+
+	/*
+	 * Optional power-on lens position. The actuator has no non-volatile
+	 * memory, so without this the lens sits wherever the DAC's reset value
+	 * points, which is the far end of the range on this part and leaves
+	 * everything up close out of focus until userspace moves it.
+	 */
+	ret = device_property_read_u32(&client->dev, "dongwoon,default-position",
+				       &val);
+	if (!ret) {
+		if (val > DW9719_MAX_FOCUS_POS)
+			return dev_err_probe(&client->dev, -EINVAL,
+					     "default position is out of range\n");
+		dw9719->default_position = val;
+	}
 
 	dw9719->regulator = devm_regulator_get(&client->dev, "vdd");
 	if (IS_ERR(dw9719->regulator))
 		return dev_err_probe(&client->dev, PTR_ERR(dw9719->regulator),
 				     "getting regulator\n");
+
+	/*
+	 * Optional I/O supply: on boards where the bus pull-ups hang off a
+	 * rail the actuator does not otherwise hold (e.g. the camera
+	 * sensor's I/O rail), the bus is dead whenever that rail is off.
+	 */
+	dw9719->vin = devm_regulator_get_optional(&client->dev, "vin");
+	if (IS_ERR(dw9719->vin)) {
+		if (PTR_ERR(dw9719->vin) != -ENODEV)
+			return dev_err_probe(&client->dev, PTR_ERR(dw9719->vin),
+					     "getting vin regulator\n");
+		dw9719->vin = NULL;
+	}
 
 	v4l2_i2c_subdev_init(&dw9719->sd, client, &dw9719_ops);
 	dw9719->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
@@ -453,6 +515,12 @@ static const struct of_device_id dw9719_of_table[] = {
 	{ .compatible = "dongwoon,dw9719", .data = (const void *)DW9719 },
 	{ .compatible = "dongwoon,dw9761", .data = (const void *)DW9761 },
 	{ .compatible = "dongwoon,dw9800k", .data = (const void *)DW9800K },
+	/*
+	 * The Giantec GT9764 uses the same register layout as the DW9800K:
+	 * 0x02 enables ringing, 0x06 holds the SAC mode and 0x07 the VCM
+	 * prescaler. The vendor module description reports it at 0x0c.
+	 */
+	{ .compatible = "giantec,gt9764", .data = (const void *)DW9800K },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, dw9719_of_table);

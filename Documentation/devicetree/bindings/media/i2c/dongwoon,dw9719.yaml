@@ -14,20 +14,39 @@ description:
   with 100 mA output current sink capability, designed for linear control of
   voice coil motors (VCM) in camera lenses. This chip provides a Smart Actuator
   Control (SAC) mode intended for driving voice coil lenses in camera modules.
+  The Giantec GT9764 has the DW9800K's register map and no ID register, and
+  is driven as one.
 
 properties:
   compatible:
-    enum:
-      - dongwoon,dw9718s
-      - dongwoon,dw9719
-      - dongwoon,dw9761
-      - dongwoon,dw9800k
+    oneOf:
+      - enum:
+          - dongwoon,dw9718s
+          - dongwoon,dw9719
+          - dongwoon,dw9761
+          - dongwoon,dw9800k
+      - items:
+          - const: giantec,gt9764
+          - const: dongwoon,dw9800k
 
   reg:
     maxItems: 1
 
   vdd-supply:
     description: VDD power supply
+
+  vin-supply:
+    description:
+      Digital I/O voltage supply, for boards where the I2C bus is referenced
+      to a rail other than VDD.
+
+  dongwoon,default-position:
+    description:
+      Lens position to move to when the actuator is powered on. The part has
+      no non-volatile memory, so without this the lens stays at the reset
+      value until userspace sets a position. Expressed in the same units as
+      the V4L2_CID_FOCUS_ABSOLUTE control.
+    $ref: /schemas/types.yaml#/definitions/uint32
 
   dongwoon,sac-mode:
     description: |
