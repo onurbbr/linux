@@ -480,8 +480,8 @@
 			no-map;
 		};
 
-		pil_video_mem: memory@51400000 {
-			reg = <0x0 0x51400000 0x0 0x500000>;
+		pil_video_mem: memory@55b17000 {
+			reg = <0x0 0x55b17000 0x0 0x700000>;
 			no-map;
 		};
 
@@ -496,22 +496,22 @@
 		};
 
 		pil_adsp_mem: memory@53800000 {
-			reg = <0x0 0x53800000 0x0 0x2e00000>;
+			reg = <0x0 0x53800000 0x0 0x2300000>;
 			no-map;
 		};
 
-		pil_ipa_fw_mem: memory@56600000 {
-			reg = <0x0 0x56600000 0x0 0x10000>;
+		pil_ipa_fw_mem: memory@55b00000 {
+			reg = <0x0 0x55b00000 0x0 0x10000>;
 			no-map;
 		};
 
-		// pil_ipa_gsi_mem: memory@55610000 {
-		// 	reg = <0x0 0x55610000 0x0 0x5000>;
-		// 	no-map;
-		// };
+		pil_ipa_gsi_mem: memory@55b10000 {
+			reg = <0x0 0x55b10000 0x0 0x5000>;
+			no-map;
+		};
 
-		pil_gpu_mem: memory@56615000 {
-			reg = <0x0 0x56615000 0x0 0x2000>;
+		pil_gpu_mem: memory@55b15000 {
+			reg = <0x0 0x55b15000 0x0 0x2000>;
 			no-map;
 		};
 
