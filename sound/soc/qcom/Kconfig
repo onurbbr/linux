@@ -111,6 +111,15 @@ config SND_SOC_QDSP6_APM
 	select SND_SOC_QDSP6_APM_DAI
 	select SND_SOC_QDSP6_APM_LPASS_DAI
 
+config SND_SOC_QDSP6_APM_VOICE_POC
+	tristate "AudioReach voice call proof of concept"
+	depends on SND_SOC_QDSP6_APM
+	help
+	  Loads the voice call graphs the device's own ACDB describes onto the
+	  ADSP, under debugfs control, so that call audio can be brought up
+	  without a full AudioReach voice implementation. Built in, the debugfs
+	  control exists from early boot; as a module it can be reloaded.
+
 config SND_SOC_QDSP6_PRM_LPASS_CLOCKS
 	tristate
 
