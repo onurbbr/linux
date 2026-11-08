@@ -386,8 +386,16 @@
 	status = "okay";
 };
 
+/*
+ * The video firmware shipped with this device speaks the second generation of
+ * the HFI protocol, so it has to go through iris rather than venus. Naming the
+ * image here also keeps iris on its Gen2 descriptor, which is the one that
+ * knows the AR50 LITE buffer sizes; without the override iris would fall back
+ * to the Gen1 descriptor while still loading this very image.
+ */
 &venus {
 	status = "okay";
+	firmware-name = "qcom/venus-6.0/venus.mbn";
 };
 
 &rpm_requests {
