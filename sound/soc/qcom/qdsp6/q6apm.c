@@ -37,6 +37,21 @@ int q6apm_send_cmd_sync(struct q6apm *apm, const struct gpr_pkt *pkt,
 	return audioreach_send_cmd_sync(&gdev->dev, gdev, &apm->result, &apm->lock,
 					NULL, &apm->wait, pkt, rsp_opcode);
 }
+EXPORT_SYMBOL_GPL(q6apm_send_cmd_sync);
+
+/*
+ * Hooks for the voice call proof of concept. The PoC maps a shared memory
+ * region with Q6APM_POC_MAP_TOKEN and needs the handle the DSP hands back;
+ * it also needs the APM instance to send its own commands through.
+ */
+u32 q6apm_poc_map_handle;
+EXPORT_SYMBOL_GPL(q6apm_poc_map_handle);
+
+struct q6apm *q6apm_poc_get(void)
+{
+	return g_apm;
+}
+EXPORT_SYMBOL_GPL(q6apm_poc_get);
 
 static struct audioreach_graph *q6apm_get_audioreach_graph(struct q6apm *apm, uint32_t graph_id)
 {
@@ -978,6 +993,12 @@ static int apm_callback(const struct gpr_resp_pkt *data, void *priv, int op)
 		rsp = data->payload;
 		graph_id = hdr->token & APM_MMAP_TOKEN_GID_MASK;
 		is_pos_buf = hdr->token & APM_MMAP_TOKEN_MAP_TYPE_POS_BUF;
+
+		if (hdr->token == Q6APM_POC_MAP_TOKEN) {
+			q6apm_poc_map_handle = rsp->mem_map_handle;
+			wake_up(&apm->wait);
+			break;
+		}
 
 		info = idr_find(&apm->graph_info_idr, graph_id);
 		if (info) {
